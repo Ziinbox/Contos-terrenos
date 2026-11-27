@@ -188,6 +188,14 @@ body.dbo #hint{display:none}
 #musp.min{padding:4px 8px;cursor:pointer}
 #musp.min>*:not(#mpn):not(audio){display:none!important}
 #musp.min #mpn{cursor:pointer;font-size:0}#musp.min #mpn::before{content:'🎵';font-size:15px}
+
+#fcm{position:fixed;z-index:29;min-width:220px;max-width:min(320px,calc(100vw - 12px));max-height:60vh;overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35);padding:8px;display:flex;flex-direction:column;gap:6px}
+#fcm[hidden]{display:none}
+#fcm b{font-size:13px;padding:2px 4px 4px}
+.fcmr{display:flex;align-items:center;gap:8px;padding:4px 4px;border-top:1px solid var(--line)}
+.fcmr span{flex:1;font-size:14px}
+.fcmr button{border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:8px;padding:4px 10px;font:600 12px system-ui;cursor:pointer;white-space:nowrap}
+.fcmr button.off{background:transparent;color:inherit;border-color:var(--line)}
 </style></head><body>
 <div id="bossz"></div><div id="bar">
 <button id="pvb">Ver como jogador</button><button id="pmb">Permissões</button><button id="nkb" hidden>Apelido</button><button id="ivb">Convidar</button><button id="musb">Música</button><button id="edb">Editar barra</button><button id="edl" class="ctl">◀</button><button id="edr" class="ctl">▶</button><button id="edz" class="ctl">Restaurar</button>
@@ -1004,7 +1012,8 @@ const FKEY='mesa_fichas_v1',fNum=x=>Math.max(0,Math.min(1e6,Math.floor(+x)||0));
 function fLoad(){try{const o=JSON.parse(localStorage.getItem(FKEY)||'{}');FICHAS=o.f||{};FLOCK=!!o.l}catch(e){}let ch=0;for(const id in FICHAS)if(fSplitInv(FICHAS[id]))ch=1;if(ch)try{fSaveL()}catch(e){}}
 function fSplitInv(s){const R=s&&s.d2&&s.d2.invoc&&s.d2.invoc.rows;if(!R)return false;let ch=false;for(let i=0;i<R.length;i++){const v=String(R[i][6]||'');if(!/^tame:.*,/.test(v))continue;const ids=v.slice(5).split(',').filter(Boolean);R[i][6]='tame:'+ids[0];ids.slice(1).forEach((pid,k)=>{const p=tlb(pid),r=R[i].map(()=>'');r[0]=p?p.name:R[i][0];r[1]=p&&p.hp?String(p.hp):R[i][1];r[2]=p&&p.ar?String(p.ar):R[i][2];r[3]=p&&p.ma?String(p.ma):R[i][3];r[4]=p&&(p.dm||{}).fis?String(p.dm.fis):R[i][4];r[5]=p&&(p.dm||{}).mag?String(p.dm.mag):R[i][5];r[6]='tame:'+pid;R.splice(i+1+k,0,r)});ch=true}if(ch)s.sig=JSON.stringify([s.d,s.d2]);return ch}
 function fSaveL(){if(ROLE!=='gm')return;try{localStorage.setItem(FKEY,JSON.stringify({f:FICHAS,l:FLOCK}))}catch(e){}}
-function fMeta(){return Object.values(FICHAS).map(s=>({id:s.id,name:s.name,tk:s.tok,cr:tlib.filter(p=>p.tame===s.id).map(p=>({id:p.id,name:p.name}))}))}
+function fCrIds(s){const ids=[];const R=s&&s.d2&&s.d2.invoc&&s.d2.invoc.rows;if(R)R.forEach(r=>{const v=String(r[6]||'');if(/^tame:/.test(v))v.slice(5).split(',').filter(Boolean).forEach(x=>{if(!ids.includes(x))ids.push(x)})});tlib.forEach(p=>{if(p.tame===s.id&&!ids.includes(p.id))ids.push(p.id)});return ids}
+function fMeta(){return Object.values(FICHAS).map(s=>({id:s.id,name:s.name,tk:s.tok,cr:fCrIds(s).map(id=>tlb(id)).filter(Boolean).map(p=>({id:p.id,name:p.name}))}))}
 function fList(){return ROLE==='gm'?fMeta():FMETA}
 function fPush(except){if(ROLE!=='gm'||!window.MESA_BC)return;window.MESA_BC({t:'fl',l:FLOCK,f:fMeta()},except)}
 function fPushD(s,except){if(ROLE!=='gm'||!window.MESA_BC)return;window.MESA_BC({t:'fd',id:s.id,name:s.name,d:s.d,d2:s.d2},except)}
@@ -1018,7 +1027,7 @@ fInv(s);renderLib('tokens');draw();save();lastTok='';pubSoon()}
 function fLv(o){const r={};['aer','arc','geo','hid','inv','pir','poi','car','med','sab','des','for','fur'].forEach(k=>{r[k]=fNum(o&&o[k])});return r}
 function fIb(o){o=o||{};return{n:fNum(o.n),ipv:fNum(o.ipv),invp:fNum(o.invp),idano:fNum(o.idano),idf:fNum(o.idf)}}
 function fSp(a){return(Array.isArray(a)?a:[]).slice(0,120).map(x=>({id:String(x.id).slice(0,90),n:String(x.n).slice(0,60),g:String(x.g||'').slice(0,20),l:fNum(x.l),d:String(x.d||'').slice(0,700),c:String(x.c||'').slice(0,40)}))}
-function fInv(s){const sm=s.sum;if(!sm||!sm.inv)return;sm.inv.forEach(o=>{const p=tlib.find(q=>q.id===o.pid&&q.tame===s.id);if(!p)return;const full=p.hc==null||p.hc>=(p.hp||0);if(o.hp!=null)p.hp=o.hp;if(o.ar!=null)p.ar=o.ar;if(o.ma!=null)p.ma=o.ma;p.dm={...(p.dm||{})};if(o.fis!=null)p.dm.fis=o.fis;if(o.mag!=null)p.dm.mag=o.mag;if(full||p.hc==null)p.hc=p.hp;p.hc=Math.min(p.hc,p.hp||0);put('tokens',p);tokens.forEach(t=>{if(t.pid===p.id){t.hm=p.hp||0;t.am=p.ar||0;t.mm=p.ma||0;if(t.hp!==undefined)t.hp=Math.min(t.hp,t.hm);if(t.ap!==undefined)t.ap=Math.min(t.ap,t.am);if(t.mp!==undefined)t.mp=Math.min(t.mp,t.mm)}})})}
+function fInv(s){const sm=s.sum;if(!sm||!sm.inv)return;sm.inv.forEach(o=>{const p=tlb(o.pid);if(!p||(p.tame&&p.tame!==s.id))return;if(!p.tame)p.tame=s.id;const full=p.hc==null||p.hc>=(p.hp||0);if(o.hp!=null)p.hp=o.hp;if(o.ar!=null)p.ar=o.ar;if(o.ma!=null)p.ma=o.ma;p.dm={...(p.dm||{})};if(o.fis!=null)p.dm.fis=o.fis;if(o.mag!=null)p.dm.mag=o.mag;if(full||p.hc==null)p.hc=p.hp;p.hc=Math.min(p.hc,p.hp||0);put('tokens',p);tokens.forEach(t=>{if(t.pid===p.id){t.hm=p.hp||0;t.am=p.ar||0;t.mm=p.ma||0;if(t.hp!==undefined)t.hp=Math.min(t.hp,t.hm);if(t.ap!==undefined)t.ap=Math.min(t.ap,t.am);if(t.mp!==undefined)t.mp=Math.min(t.mp,t.mm)}})})}
 function fApply(m){if(ROLE!=='gm'||!m||typeof m.id!=='string'||!m.id||m.id.length>40)return;let s=FICHAS[m.id];const nw=!s;if(nw)s=FICHAS[m.id]={id:m.id,name:'',d:null,d2:null,sum:null,sig:''};
 if(m.d&&m.d2){const sig=JSON.stringify([m.d,m.d2]);if(sig.length>600000)return;if(!nw&&s.sig===sig&&!m.force)return;s.d=m.d;s.d2=m.d2;s.sig=sig}else if(!nw&&!m.force)return;
 const q=m.sum;if(q&&typeof q==='object'){const DKS=['fis','mag','ar','arc','agua','terra','fogo','ven','choque','acido','cura'],RKS=['fisica','ar','arcano','agua','fogo','terra','veneno','choque','acido'],dm={},rs={};DKS.forEach(k=>{if(q.dm&&q.dm[k])dm[k]=fNum(q.dm[k])});RKS.forEach(k=>{if(q.rs&&q.rs[k]!=null)rs[k]=Math.max(-100,Math.min(1000,Math.floor(+q.rs[k])||0))});
@@ -1066,7 +1075,7 @@ if(!roster.players.includes(pid)){reply({t:'msg',text:'Apenas jogadores podem ed
 if(t==='fs'){if(FLOCK){reply({t:'msg',text:'As fichas estão bloqueadas pelo mestre.'});reply({t:'fl',l:FLOCK,f:fMeta()});return true}m.from=pid;fApply(m);return true}
 if(t==='ftm'){if(fidOf(pid)!==m.id||!FICHAS[m.id]){return true}const tk=tokens.find(x=>x.u===String(m.tu||'')),oo=tk&&tlb(tk.pid);if(!oo||oo.hero||oo.fid||oo.tame){reply({t:'msg',text:'Escolha uma criatura do mapa que não seja herói nem já domada.'});return true}tmqAdd({id:m.id,row:m.row|0,pid:oo.id,by:pid});reply({t:'msg',text:'Pedido de domar enviado ao mestre.'});return true}
 if(t==='fut'){if(FLOCK){reply({t:'msg',text:'As fichas estão bloqueadas pelo mestre.'});return true}fUntame(m.id,m.row|0);return true}
-const sid=fidOf(pid),p=tlb(m.pid);if(!p||!sid||p.tame!==sid){reply({t:'msg',text:'Essa criatura não é sua.'});return true}
+const sid=fidOf(pid),p=tlb(m.pid);if(!p||!sid||!FICHAS[sid]||!fCrIds(FICHAS[sid]).includes(p.id)){reply({t:'msg',text:'Essa criatura não é sua.'});return true}
 if(t==='fpl'){if(tokens.some(x=>x.pid===p.id)){reply({t:'msg',text:'Já está em campo.'});return true}const h=fHeroTok(sid);place(p,h?{x:h.x+grid,y:h.y}:null);tokens[tokens.length-1].tm=1;lastTok='';pubSoon();draw()}
 if(t==='frm'){const i=tokens.findIndex(x=>x.pid===p.id);if(i>=0){tokens.splice(i,1);draw();save();lastTok='';pubSoon()}}
 return true}
@@ -1085,8 +1094,12 @@ if(ROLE==='gm')fApply({id:m.id,d:m.d,d2:m.d2,sum:m.sum});else{const s=FICHAS[m.i
 else if(m.fk==='untame'){if(!confirm('Desfazer o vínculo desta invocação com o token?'))return;if(ROLE==='gm')fUntame(m.id,m.row);else if(window.MESA_SEND)window.MESA_SEND({t:'fut',id:m.id,row:m.row})}
 else if(m.fk==='tame'){if(ROLE==='gm')fTame(m.id,m.row,m.name);else if(window.MESA_SEND){tmPick={id:m.id,row:m.row,name:m.name,pl:1};$('#fbp').hidden=true;$('#fvw').hidden=true;$('#fvf').innerHTML='';FOPEN=null;tmBar(true,'Toque no mapa na criatura que você quer domar'+(m.name?' (“'+m.name+'”)':'')+'.')}}});
 function fCrBar(){const nb=$('#nkb');if(!nb)return;let box=$('#fcb');if(!box){box=document.createElement('span');box.id='fcb';box.style.display='contents';nb.after(box)}
-const me=ROLE==='gm'?null:fList().find(x=>x.id===FSEL),L=(me&&me.cr)||[],sig=JSON.stringify(L.map(c=>[c.id,c.name,tokens.some(t=>t.pid===c.id)]));if(box._s===sig)return;box._s=sig;box.innerHTML='';
-L.forEach(c=>{const on=tokens.some(t=>t.pid===c.id),b=document.createElement('button');b.className=nb.className;b.textContent=(on?'🐾 Retirar ':'🐾 Pôr ')+c.name;b.onclick=()=>{if(window.MESA_SEND)window.MESA_SEND({t:on?'frm':'fpl',pid:c.id});setTimeout(()=>{box._s='';fCrBar()},900)};box.append(b)})}
+const me=ROLE==='gm'?null:fList().find(x=>x.id===FSEL),L=(me&&me.cr)||[],sig=JSON.stringify(L.map(c=>[c.id,c.name,tokens.some(t=>t.pid===c.id)]));if(box._s===sig)return;box._s=sig;
+let b=box.querySelector('button');if(!L.length){box.innerHTML='';const m=$('#fcm');if(m)m.hidden=true;return}
+if(!b){b=document.createElement('button');b.className=nb.className;box.append(b);b.onclick=e=>{e.stopPropagation();const m=fCrMenu();m.hidden=!m.hidden;if(!m.hidden){const r=b.getBoundingClientRect();m.style.left=Math.max(6,Math.min(innerWidth-m.offsetWidth-6,r.left))+'px';m.style.top=(r.bottom+6)+'px'}}}
+const nOn=L.filter(c=>tokens.some(t=>t.pid===c.id)).length;b.textContent='🐾 Invocações ('+nOn+'/'+L.length+') ▾';
+const m=fCrMenu();m.innerHTML='<b>🐾 Invocações</b>';L.forEach(c=>{const on=tokens.some(t=>t.pid===c.id),row=document.createElement('div');row.className='fcmr';row.innerHTML='<span>'+esc(c.name)+'</span>';const bt=document.createElement('button');bt.textContent=on?'Retirar':'Pôr no mapa';bt.className=on?'off':'';bt.onclick=e=>{e.stopPropagation();if(window.MESA_SEND)window.MESA_SEND({t:on?'frm':'fpl',pid:c.id});setTimeout(()=>{box._s='';fCrBar()},900)};row.append(bt);m.append(row)})}
+function fCrMenu(){let m=$('#fcm');if(!m){m=document.createElement('div');m.id='fcm';m.hidden=true;document.body.append(m);document.addEventListener('click',e=>{if(!m.hidden&&!m.contains(e.target))m.hidden=true})}return m}
 setInterval(fCrBar,1000);
 function fRefresh(){try{hRender()}catch(e){}fCrBar();if(!$('#fbp').hidden)fBook();if(!$('#fch').hidden)fChooser()}
 function fBtns(box,cb){box.innerHTML='';const L=fList();if(!L.length)box.innerHTML='<p class="em">'+(ROLE!=='gm'&&!FGOT?'Buscando as fichas do mestre…':'Nenhuma ficha ainda.')+'</p>';L.forEach(f=>{const b=document.createElement('button');b.className='fbi';b.textContent=(f.name||'Sem nome')+(f.id===FSEL?' ★':'');b.onclick=()=>cb(f);box.append(b)})}
