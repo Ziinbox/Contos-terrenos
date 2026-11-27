@@ -69,7 +69,7 @@ body.dbo #hint{display:none}
 #penr[hidden],#dwp[hidden]{display:none}
 #mus{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:30;padding:12px}#mus[hidden]{display:none}
 #mus .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;width:min(380px,100%);max-height:100%;overflow:auto}#mus label{display:flex;flex-direction:column;gap:4px;font-size:12px;flex:1}#mus input[type=range]{width:100%}
-#musp{position:absolute;left:8px;top:8px;z-index:28;display:flex;gap:6px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;max-width:calc(100% - 16px)}#musp[hidden]{display:none}#mpn{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#musp{position:absolute;right:8px;top:8px;z-index:28;display:flex;gap:6px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;max-width:calc(100% - 16px)}#musp[hidden]{display:none}#mpn{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #perm{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:30;padding:12px}#perm[hidden]{display:none}
 #nick{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:31;padding:12px}#nick[hidden]{display:none}
 #inv{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:30;padding:12px}#inv[hidden]{display:none}
@@ -183,6 +183,11 @@ body.dbo #hint{display:none}
 #hfx.on{opacity:1;animation:hfxp 3.5s ease-in-out infinite}
 @keyframes hfxp{0%,100%{filter:brightness(1)}50%{filter:brightness(1.25)}}
 .hv.low{color:#e23b3b}
+
+#musp .mpx{border:0;background:transparent;color:inherit;cursor:pointer;font:700 14px system-ui;padding:0 2px;opacity:.7}
+#musp.min{padding:4px 8px;cursor:pointer}
+#musp.min>*:not(#mpn):not(audio){display:none!important}
+#musp.min #mpn{cursor:pointer;font-size:0}#musp.min #mpn::before{content:'🎵';font-size:15px}
 </style></head><body>
 <div id="bossz"></div><div id="bar">
 <button id="pvb">Ver como jogador</button><button id="pmb">Permissões</button><button id="nkb" hidden>Apelido</button><button id="ivb">Convidar</button><button id="musb">Música</button><button id="edb">Editar barra</button><button id="edl" class="ctl">◀</button><button id="edr" class="ctl">▶</button><button id="edz" class="ctl">Restaurar</button>
@@ -249,7 +254,7 @@ body.dbo #hint{display:none}
 <div class="fr"><label style="flex-direction:row;align-items:center;gap:6px"><input id="mtx" type="checkbox" checked> Transmitir aos jogadores</label></div>
 <p class="em" id="mst"></p><p class="em">Os jogadores ouvem em tempo real o que você toca aqui. Mantenha esta aba aberta.</p>
 <div class="fr"><button id="mcx">Fechar</button></div></div></div>
-<div id="musp" hidden><span id="mpn">🎵</span><button id="mpa" hidden>Ativar som</button><input id="mpv2" type="range" min="0" max="100" value="80" style="width:80px"><button id="mpm">🔊</button><audio id="mau" autoplay></audio></div>
+<div id="musp" hidden><span id="mpn">🎵</span><button id="mpa" hidden>Ativar som</button><input id="mpv2" type="range" min="0" max="100" value="80" style="width:80px"><button id="mpm">🔊</button><button class="mpx" id="mpx" title="Minimizar">–</button><audio id="mau" autoplay></audio></div>
 <div id="asb" hidden><span id="ast"></span><button id="asd" class="on">Concluir</button></div>
 <div id="toast" hidden></div>
 <div id="ib" hidden><b>Inimigos</b><button id="imH">Heróis</button><button id="imR">Aleatorizar</button><button id="imV">Vagar</button><label style="display:flex;gap:4px;align-items:center;font-size:12px" title="Distância em que inimigos veem heróis e vão até eles (0 = não veem)">Visão <input id="vis" type="number" min="0" max="100" value="30" style="width:56px"> casas</label><span id="it"></span></div>
@@ -1303,6 +1308,10 @@ else if(b){r1.style.background='radial-gradient(ellipse at center,transparent '+
 else{r1.style.background='radial-gradient(ellipse at center,transparent '+hm+',rgba(190,0,0,'+(.35+.4*a)+') calc('+hm+' + 30%))';r2.style.opacity='0'}F.classList.add('on')}
 setInterval(()=>{try{hFx()}catch(e){}},1000);
 function hNet(){if(!RDB)return;if(ROLE==='gm')hSave();else RDB.doc('fome/main').onSnapshot(s=>{if(!s.exists)return;const d=s.data();HUN=(d&&d.h&&typeof d.h==='object')?d.h:{};hRender();hFx()},()=>{})}
+
+// ---- minimizar música ----
+(()=>{const P=$('#musp');if(!P)return;let mn=false;try{mn=localStorage.getItem('mesa_musmin')==='1'}catch(e){}const set=v=>{mn=v;P.classList.toggle('min',v);P.title=v?'Música (toque para abrir)':'';try{localStorage.setItem('mesa_musmin',v?'1':'0')}catch(e){}};set(mn);
+$('#mpx').onclick=e=>{e.stopPropagation();set(true)};P.addEventListener('click',e=>{if(mn){e.stopPropagation();set(false)}},true)})();
 // ---- barra de chefe ----
 function bossOf(t){if(t.bs!==undefined)return !!t.bs;const p=tlb(t.pid);return !!(p&&p.boss)}
 const BCOL=new Map(),BB=new Map();
